@@ -9,6 +9,7 @@ AgriSmart is a comprehensive web application designed to revolutionize farming p
 ## 🚀 Features
 
 ### 🌾 **Crop Recommendation & Profit Estimation**
+
 - AI-powered crop selection based on location and soil conditions
 - Real-time market price analysis
 - Profit estimation and ROI calculations
@@ -16,6 +17,7 @@ AgriSmart is a comprehensive web application designed to revolutionize farming p
 - Expected yield predictions
 
 ### 💧 **Water Management Optimization**
+
 - Smart irrigation scheduling
 - Weather-integrated water planning
 - Crop-specific water requirements
@@ -23,12 +25,12 @@ AgriSmart is a comprehensive web application designed to revolutionize farming p
 - Water usage optimization
 
 ### 🌿 **Pest & Disease Detection**
+
 - Image-based disease identification
 - AI-powered plant health assessment
 - Treatment recommendations (organic & chemical)
 - Prevention strategies and tips
 - Confidence-based detection results
-
 
 ## 🛠️ Technology Stack
 
@@ -50,12 +52,14 @@ Login/Signup → Dashboard → Module Selection → Input Forms → AI Processin
 ### Prerequisites
 
 Make sure you have the following installed on your system:
+
 - **Node.js** (version 16.0 or higher)
 - **npm** (comes with Node.js)
 
 ### Installation
 
 1. **Clone or create the project**
+
    ```bash
    # Create a new Vite React project
    npm create vite@latest agrismart-app -- --template react
@@ -63,36 +67,36 @@ Make sure you have the following installed on your system:
    ```
 
 2. **Install dependencies**
+
    ```bash
    # Install base dependencies
    npm install
-   
+
    # Install required packages
    npm install lucide-react
-   
+
    # Install Tailwind CSS
    npm install -D tailwindcss postcss autoprefixer
    npx tailwindcss init -p
    ```
 
 3. **Configure Tailwind CSS**
-   
+
    Update `tailwind.config.js`:
+
    ```javascript
    /** @type {import('tailwindcss').Config} */
    export default {
-     content: [
-       "./index.html",
-       "./src/**/*.{js,ts,jsx,tsx}",
-     ],
+     content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
      theme: {
        extend: {},
      },
      plugins: [],
-   }
+   };
    ```
-   
+
    Update `src/index.css`:
+
    ```css
    @tailwind base;
    @tailwind components;
@@ -100,55 +104,66 @@ Make sure you have the following installed on your system:
    ```
 
 4. **Replace the default App component**
-   
+
    Replace the contents of `src/App.jsx` with the AgriSmart React component code.
 
 5. **Run the development server**
+
    ```bash
    npm run dev
    ```
 
 6. **Open your browser**
-   
+
    Navigate to `http://localhost:5173` to see the application.
 
 ## 🏃‍♂️ Running the Project
 
 ### Development Mode
+
 ```bash
 npm run dev
 ```
+
 Runs the app in development mode with hot reloading.
 
 ### Build for Production
+
 ```bash
 npm run build
 ```
+
 Builds the app for production to the `dist` folder.
 
 ### Preview Production Build
+
 ```bash
 npm run preview
 ```
+
 Serves the production build locally for testing.
 
 ## 📝 Usage Instructions
 
 ### 1. **Authentication**
+
 - Use the pre-filled demo credentials or create a new account
 - Demo login: `farmer@example.com` / `password123`
 
 ### 2. **Crop Recommendations**
+
 - Select your location from the dropdown
 - Enter your farm size in acres
 - Get AI-powered crop suggestions with profit estimates
 
 ### 3. **Water Management**
+
 - Choose your crop type and growth stage
 - Enter farm size for water calculations
 - Receive optimized irrigation schedules
 
 ### 4. **Pest Detection**
+
 - Upload or capture an image of affected plants
 - Get instant AI-powered disease identification
 - Access treatment options (organic/chemical)
@@ -172,13 +187,16 @@ agrismart-app/
 ## 🔧 Configuration
 
 ### Environment Variables
+
 Create a `.env` file in the root directory for any environment-specific configurations:
+
 ```env
 VITE_API_BASE_URL=your_api_endpoint
 VITE_WEATHER_API_KEY=your_weather_api_key
 ```
 
 ### API Integration
+
 The current version uses dummy data for demonstration. To integrate with real APIs:
 
 1. Replace dummy data in form submission handlers
@@ -190,12 +208,10 @@ npm run build
 npx vercel
 ```
 
-
 ```bash
 npm run build
 # Upload dist/ folder to Netlify
 ```
-
 
 ```bash
 npm install --save-dev gh-pages
@@ -214,43 +230,34 @@ Contributions are welcomed! Here's how you can help:
 5. **Open a Pull Request**
 
 ### Development Guidelines
+
 - Follow React best practices and hooks patterns
 - Use Tailwind CSS for styling (avoid custom CSS when possible)
 - Ensure mobile responsiveness for all new features
 - Add proper error handling and loading states
 - Test on multiple devices and browsers
 
-
-
-
 ```json
 {
   "location": "Hisar, Haryana",
   "farm_size_acres": 2,
   "soil_type": "Loamy",
-  "weather_forecast": {"temp": 32, "rainfall_mm": 5},
-  "market_price": {"wheat": 1800, "mustard": 5000},
-  "expected_yield": {"wheat": 3000, "mustard": 1200},
-  "recommendations": [
-    {"crop": "Mustard", "profit": 11000, "roi": 83.3}
-  ]
+  "weather_forecast": { "temp": 32, "rainfall_mm": 5 },
+  "market_price": { "wheat": 1800, "mustard": 5000 },
+  "expected_yield": { "wheat": 3000, "mustard": 1200 },
+  "recommendations": [{ "crop": "Mustard", "profit": 11000, "roi": 83.3 }]
 }
 ```
-
 
 ```json
 {
   "crop": "Wheat",
   "growth_stage": "Vegetative",
-  "water_requirement_mm": {"vegetative": 20, "flowering": 30},
-  "weather_forecast": [
-    {"date": "2025-09-04", "rainfall_mm": 2, "temp": 30}
-  ]
+  "water_requirement_mm": { "vegetative": 20, "flowering": 30 },
+  "weather_forecast": [{ "date": "2025-09-04", "rainfall_mm": 2, "temp": 30 }]
 }
 ```
-
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
