@@ -4,8 +4,6 @@
 
 AgriSmart is a comprehensive web application designed to revolutionize farming practices through AI-powered insights and recommendations. Built specifically for farmers, this platform provides intelligent crop recommendations, water management optimization, and pest detection capabilities.
 
-![AgriSmart Banner](https://via.placeholder.com/800x300/4CAF50/FFFFFF?text=AgriSmart+-+Smart+Farming+Revolution)
-
 ## 🚀 Features
 
 ### 🌾 **Crop Recommendation & Profit Estimation**
@@ -237,19 +235,7 @@ Contributions are welcomed! Here's how you can help:
 - Add proper error handling and loading states
 - Test on multiple devices and browsers
 
-```json
-{
-  "location": "Hisar, Haryana",
-  "farm_size_acres": 2,
-  "soil_type": "Loamy",
-  "weather_forecast": { "temp": 32, "rainfall_mm": 5 },
-  "market_price": { "wheat": 1800, "mustard": 5000 },
-  "expected_yield": { "wheat": 3000, "mustard": 1200 },
-  "recommendations": [{ "crop": "Mustard", "profit": 11000, "roi": 83.3 }]
-}
 ```
-
-```json
 {
   "crop": "Wheat",
   "growth_stage": "Vegetative",
