@@ -235,14 +235,6 @@ Contributions are welcomed! Here's how you can help:
 - Add proper error handling and loading states
 - Test on multiple devices and browsers
 
-```
-{
-  "crop": "Wheat",
-  "growth_stage": "Vegetative",
-  "water_requirement_mm": { "vegetative": 20, "flowering": 30 },
-  "weather_forecast": [{ "date": "2025-09-04", "rainfall_mm": 2, "temp": 30 }]
-}
-```
 
 ## 📄 License
 
