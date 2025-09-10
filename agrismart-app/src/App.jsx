@@ -24,6 +24,7 @@ const AgriSmartAppContent = () => {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [activeTab, setActiveTab] = useState("organic");
   const [isLoading, setIsLoading] = useState(false);
+  const [waterResults, setWaterResults] = useState(null);
   const fileInputRef = useRef(null);
   const { t, tArray } = useLanguage();
 
@@ -51,13 +52,40 @@ const AgriSmartAppContent = () => {
     }, 2500);
   };
 
-  const handleWaterSubmit = (e) => {
+  const handleWaterSubmit = async (e) => {
     e.preventDefault();
+    const formData = new FormData(e.target);
+    const crop = formData.get("crop");
+    const stage = formData.get("stage");
+    const farmSize = parseFloat(formData.get("farm_size"));
+
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const response = await fetch(
+        "http://localhost:8000/irrigation-schedule",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ crop, stage, farm_size_acres: farmSize }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.detail || "Failed to calculate irrigation schedule"
+        );
+      }
+
+      const scheduleData = await response.json();
+      setWaterResults(scheduleData);
       setCurrentScreen("water-results");
-    }, 2500);
+    } catch (error) {
+      console.error("Error fetching irrigation schedule:", error);
+      alert(`An error occurred: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePestSubmit = (e) => {
@@ -282,6 +310,7 @@ const AgriSmartAppContent = () => {
                   <span>{t("cropType")}</span>
                 </label>
                 <select
+                  name="crop"
                   required
                   className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:border-cyan-400 focus:bg-white transition-all duration-300"
                 >
@@ -300,6 +329,7 @@ const AgriSmartAppContent = () => {
                   <span>{t("growthStage")}</span>
                 </label>
                 <select
+                  name="stage"
                   required
                   className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:border-cyan-400 focus:bg-white transition-all duration-300"
                 >
@@ -318,6 +348,7 @@ const AgriSmartAppContent = () => {
                 </label>
                 <input
                   type="number"
+                  name="farm_size"
                   placeholder={t("enterSizeInAcres")}
                   step="0.1"
                   required
@@ -645,199 +676,165 @@ const AgriSmartAppContent = () => {
   );
 
   // Water Results Screen
-  const WaterResultsScreen = () => (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-cyan-50/30">
-      <ModernHeader
-        title={t("waterManagementPlan")}
-        subtitle={t("smartIrrigationSchedule")}
-        onBack={() => showScreen("dashboard")}
-        icon={Droplets}
-      />
-
-      <div className="px-6 -mt-4 pb-8 space-y-6">
-        {/* Crop Info Card */}
-        <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-800">
-              {t("cropInformation")}
-            </h3>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-cyan-50 rounded-2xl p-4 text-center">
-              <p className="text-sm text-cyan-600 font-medium">
-                {t("cropType")}
-              </p>
-              <p className="text-lg font-bold text-slate-800">{t("wheat")}</p>
-            </div>
-            <div className="bg-blue-50 rounded-2xl p-4 text-center">
-              <p className="text-sm text-blue-600 font-medium">
-                {t("growthStage")}
-              </p>
-              <p className="text-lg font-bold text-slate-800">
-                {t("vegetative")}
-              </p>
-            </div>
-            <div className="bg-teal-50 rounded-2xl p-4 text-center">
-              <p className="text-sm text-teal-600 font-medium">
-                {t("farmSize")}
-              </p>
-              <p className="text-lg font-bold text-slate-800">2.0 acres</p>
-            </div>
+  const WaterResultsScreen = () => {
+    if (!waterResults) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+          <div className="text-center">
+            <p className="text-slate-600 font-semibold">
+              {t("noDataAvailable")}
+            </p>
+            <button
+              onClick={() => showScreen("water-input")}
+              className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600"
+            >
+              {t("backToDashboard")}
+            </button>
           </div>
         </div>
+      );
+    }
 
-        {/* Water Requirements */}
-        <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-3xl p-6 text-white shadow-xl shadow-cyan-500/20">
-          <div className="flex items-center space-x-3 mb-4">
-            <Droplets className="w-6 h-6" />
-            <h3 className="text-xl font-bold">{t("waterRequirements")}</h3>
-          </div>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-cyan-100">{t("currentStageNeed")}</span>
-              <span className="text-2xl font-bold">20mm/day</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-cyan-100">{t("totalFarmDaily")}</span>
-              <span className="text-2xl font-bold">25mm (2,024L)</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-cyan-100">{t("weeklyRequirement")}</span>
-              <span className="text-2xl font-bold">175mm</span>
-            </div>
-          </div>
-        </div>
+    const data = waterResults;
 
-        {/* Weather Forecast */}
-        <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
-              <Cloud className="w-5 h-5 text-white" />
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-cyan-50/30">
+        <ModernHeader
+          title={t("waterManagementPlan")}
+          subtitle={t("smartIrrigationSchedule")}
+          onBack={() => showScreen("dashboard")}
+          icon={Droplets}
+        />
+
+        <div className="px-6 -mt-4 pb-8 space-y-6">
+          <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center">
+                <Leaf className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800">
+                {t("cropInformation")}
+              </h3>
             </div>
-            <h3 className="text-xl font-bold text-slate-800">
-              {t("weatherForecast")}
-            </h3>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { date: "Sep 4", temp: "30°C", rain: "2mm", day: t("today") },
-              { date: "Sep 5", temp: "32°C", rain: "0mm", day: t("tomorrow") },
-              { date: "Sep 6", temp: "28°C", rain: "5mm", day: t("friday") },
-              { date: "Sep 7", temp: "31°C", rain: "0mm", day: t("saturday") },
-            ].map((day, index) => (
-              <div
-                key={index}
-                className="bg-slate-50 rounded-2xl p-4 text-center"
-              >
-                <p className="text-sm font-medium text-slate-600">{day.day}</p>
-                <p className="text-lg font-bold text-slate-800">{day.temp}</p>
-                <p
-                  className={`text-sm font-medium ${
-                    day.rain === "0mm" ? "text-orange-600" : "text-blue-600"
-                  }`}
-                >
-                  {day.rain} rain
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-cyan-50 rounded-2xl p-4 text-center">
+                <p className="text-sm text-cyan-600 font-medium">
+                  {t("cropType")}
+                </p>
+                <p className="text-lg font-bold text-slate-800">{data.crop}</p>
+              </div>
+              <div className="bg-blue-50 rounded-2xl p-4 text-center">
+                <p className="text-sm text-blue-600 font-medium">
+                  {t("growthStage")}
+                </p>
+                <p className="text-lg font-bold text-slate-800">{data.stage}</p>
+              </div>
+              <div className="bg-teal-50 rounded-2xl p-4 text-center">
+                <p className="text-sm text-teal-600 font-medium">
+                  {t("farmSize")}
+                </p>
+                <p className="text-lg font-bold text-slate-800">
+                  {data.farm_size_acres} {t("acres")}
                 </p>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Irrigation Schedule */}
-        <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800">
-              {t("smartIrrigationSchedule")}
-            </h3>
           </div>
-          <div className="space-y-3">
-            {[
-              {
-                day: `${t("today")} (Sep 4)`,
-                action: `${t("irrigate")} 20mm`,
-                status: "recommended",
-                reason: t("lightRainExpected"),
-              },
-              {
-                day: `${t("tomorrow")} (Sep 5)`,
-                action: `${t("irrigate")} 25mm`,
-                status: "required",
-                reason: t("noRainForecast"),
-              },
-              {
-                day: t("sep6"),
-                action: t("skipIrrigation"),
-                status: "skip",
-                reason: t("rainExpected"),
-              },
-              {
-                day: t("sep7"),
-                action: `${t("irrigate")} 25mm`,
-                status: "required",
-                reason: t("noRainForecast"),
-              },
-            ].map((schedule, index) => (
-              <div
-                key={index}
-                className={`rounded-2xl p-4 flex items-center justify-between ${
-                  schedule.status === "required"
-                    ? "bg-red-50 border-l-4 border-red-500"
-                    : schedule.status === "skip"
-                    ? "bg-green-50 border-l-4 border-green-500"
-                    : "bg-blue-50 border-l-4 border-blue-500"
-                }`}
-              >
-                <div>
-                  <p className="font-semibold text-slate-800">{schedule.day}</p>
-                  <p className="text-sm text-slate-600">{schedule.reason}</p>
+
+          <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-3xl p-6 text-white shadow-xl shadow-cyan-500/20">
+            <div className="flex items-center space-x-3 mb-4">
+              <Droplets className="w-6 h-6" />
+              <h3 className="text-xl font-bold">{t("waterRequirements")}</h3>
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-cyan-100">{t("currentStageNeed")}</span>
+                <span className="text-2xl font-bold">
+                  {data.daily_requirement_mm}mm/day
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-cyan-100">Weekly Total</span>
+                <span className="text-2xl font-bold">
+                  {data.summary.total_water_liters.toLocaleString()} L
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800">
+                {t("smartIrrigationSchedule")}
+              </h3>
+            </div>
+
+            <div className="space-y-3">
+              {data.schedule.map((day, index) => (
+                <div
+                  key={index}
+                  className={`rounded-2xl p-4 flex items-center justify-between ${
+                    !day.should_irrigate
+                      ? "bg-green-50 border-l-4 border-green-500"
+                      : "bg-blue-50 border-l-4 border-blue-500"
+                  }`}
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="text-center w-20">
+                      <p className="font-semibold text-slate-800">
+                        {day.day_of_week.slice(0, 3)}
+                      </p>
+                      <p className="text-sm text-slate-600">{day.date_str}</p>
+                    </div>
+                    <div>
+                      <p
+                        className={`font-bold text-lg ${
+                          !day.should_irrigate
+                            ? "text-green-600"
+                            : "text-blue-600"
+                        }`}
+                      >
+                        {day.action}
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        Forecast: {day.temperature_c}°C • {day.rainfall_mm}mm{" "}
+                        {t("rainfall").toLowerCase()}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p
-                    className={`font-bold ${
-                      schedule.status === "required"
-                        ? "text-red-600"
-                        : schedule.status === "skip"
-                        ? "text-green-600"
-                        : "text-blue-600"
-                    }`}
-                  >
-                    {schedule.action}
+              ))}
+            </div>
+
+            <div className="mt-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-4 border-l-4 border-emerald-500">
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-emerald-800">
+                    AI Optimization Summary
+                  </p>
+                  <p className="text-sm text-emerald-700 mt-1">
+                    Irrigation needed on {data.summary.irrigation_days} of the
+                    next 7 days. You will save water on{" "}
+                    {data.summary.water_saving_days} days due to rainfall.
                   </p>
                 </div>
               </div>
-            ))}
-          </div>
-
-          <div className="mt-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-4 border-l-4 border-emerald-500">
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5" />
-              <div>
-                <p className="font-semibold text-emerald-800">
-                  {t("smartTip")}
-                </p>
-                <p className="text-sm text-emerald-700 mt-1">
-                  {t("smartTipText")}
-                </p>
-              </div>
             </div>
           </div>
-        </div>
 
-        <button
-          onClick={() => showScreen("dashboard")}
-          className="w-full py-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold text-lg rounded-2xl shadow-xl shadow-slate-500/25 hover:shadow-2xl hover:shadow-slate-500/30 transform hover:scale-[1.02] transition-all duration-300"
-        >
-          Back to Dashboard
-        </button>
+          <button
+            onClick={() => showScreen("dashboard")}
+            className="w-full py-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold text-lg rounded-2xl shadow-xl shadow-slate-500/25 hover:shadow-2xl hover:shadow-slate-500/30 transform hover:scale-[1.02] transition-all duration-300"
+          >
+            {t("backToDashboard")}
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Pest Results Screen
   const PestResultsScreen = () => (
@@ -1059,3 +1056,619 @@ const AgriSmartApp = () => {
 };
 
 export default AgriSmartApp;
+
+// --------------------------------------------------------
+// File: src/App.jsx
+
+// import React, { useState, useRef } from 'react';
+// import { Camera, ArrowLeft, Leaf, Droplets, Bug, TrendingUp, MapPin, Calendar, Sprout, Target, CheckCircle } from 'lucide-react';
+
+// const AgriSmartApp = () => {
+//   const [currentScreen, setCurrentScreen] = useState('dashboard');
+//   const [uploadedImage, setUploadedImage] = useState(null);
+//   const [activeTab, setActiveTab] = useState('organic');
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [waterResults, setWaterResults] = useState(null);
+//   const fileInputRef = useRef(null);
+
+//   const showScreen = (screenId) => {
+//     setCurrentScreen(screenId);
+//   };
+
+//   const handleImageUpload = (e) => {
+//     const file = e.target.files[0];
+//     if (file) {
+//       const reader = new FileReader();
+//       reader.onload = (e) => {
+//         setUploadedImage(e.target.result);
+//       };
+//       reader.readAsDataURL(file);
+//     }
+//   };
+
+//   const handleCropSubmit = (e) => {
+//     e.preventDefault();
+//     setIsLoading(true);
+//     setTimeout(() => {
+//       setIsLoading(false);
+//       setCurrentScreen('crop-results');
+//     }, 2500);
+//   };
+
+//   // UPDATED: This function now calls the Python API
+//   const handleWaterSubmit = async (e) => {
+//     e.preventDefault();
+//     const formData = new FormData(e.target);
+//     const crop = formData.get('crop');
+//     const stage = formData.get('stage');
+//     const farmSize = parseFloat(formData.get('farm_size'));
+
+//     setIsLoading(true);
+
+//     try {
+//       const response = await fetch('http://localhost:8000/irrigation-schedule', {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//           crop: crop,
+//           stage: stage,
+//           farm_size_acres: farmSize
+//         }),
+//       });
+
+//       if (!response.ok) {
+//         const errorData = await response.json();
+//         throw new Error(errorData.detail || 'Failed to calculate irrigation schedule');
+//       }
+
+//       const scheduleData = await response.json();
+//       setWaterResults(scheduleData);
+//       setCurrentScreen('water-results');
+
+//     } catch (error) {
+//       console.error('Error fetching irrigation schedule:', error);
+//       alert(`An error occurred: ${error.message}`);
+//     } finally {
+//         setIsLoading(false);
+//     }
+//   };
+
+//   const handlePestSubmit = (e) => {
+//     e.preventDefault();
+//     if (!uploadedImage) {
+//       alert('Please upload an image first');
+//       return;
+//     }
+//     setIsLoading(true);
+//     setTimeout(() => {
+//       setIsLoading(false);
+//       setCurrentScreen('pest-results');
+//     }, 3000);
+//   };
+
+//   const DashboardScreen = () => (
+//      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-cyan-50/50">
+//       <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 pt-12 pb-16">
+//         <div className="px-6">
+//           <div className="flex items-center justify-center mb-6">
+//             <div className="flex items-center space-x-3">
+//               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+//                 <Sprout className="w-6 h-6 text-white" />
+//               </div>
+//               <div>
+//                 <h1 className="text-white font-bold text-xl">AgriSmart</h1>
+//                 <p className="text-emerald-100 text-sm">Smart Assistant</p>
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="text-center">
+//             <h2 className="text-3xl font-bold text-white mb-2">
+//               Welcome to Smart Farming! 👋
+//             </h2>
+//             <p className="text-emerald-100 text-lg">Choose a service to optimize your farming today</p>
+//           </div>
+//         </div>
+//       </div>
+
+//       <div className="px-6 -mt-8 pb-8">
+//         <div className="space-y-6">
+//           <div
+//             onClick={() => showScreen('crop-input')}
+//             className="group bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60 border border-slate-100 hover:shadow-2xl hover:shadow-emerald-500/10 transform hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+//           >
+//             <div className="flex items-center space-x-4 mb-4">
+//               <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25 group-hover:shadow-xl group-hover:shadow-emerald-500/30 transition-all duration-300">
+//                 <Leaf className="w-8 h-8 text-white" />
+//               </div>
+//               <div className="flex-1">
+//                 <h3 className="text-xl font-bold text-slate-800 mb-1">Crop Recommendation</h3>
+//                 <p className="text-slate-600">AI-powered crop selection & profit analysis</p>
+//               </div>
+//               <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center group-hover:bg-emerald-200 transition-all">
+//                 <TrendingUp className="w-4 h-4 text-emerald-600" />
+//               </div>
+//             </div>
+//           </div>
+
+//           <div
+//             onClick={() => showScreen('water-input')}
+//             className="group bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60 border border-slate-100 hover:shadow-2xl hover:shadow-cyan-500/10 transform hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+//           >
+//             <div className="flex items-center space-x-4 mb-4">
+//               <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/25 group-hover:shadow-xl group-hover:shadow-cyan-500/30 transition-all duration-300">
+//                 <Droplets className="w-8 h-8 text-white" />
+//               </div>
+//               <div className="flex-1">
+//                 <h3 className="text-xl font-bold text-slate-800 mb-1">Water Management</h3>
+//                 <p className="text-slate-600">Smart irrigation scheduling & optimization</p>
+//               </div>
+//               <div className="w-8 h-8 bg-cyan-100 rounded-full flex items-center justify-center group-hover:bg-cyan-200 transition-all">
+//                 <Calendar className="w-4 h-4 text-cyan-600" />
+//               </div>
+//             </div>
+//           </div>
+
+//           <div
+//             onClick={() => showScreen('pest-input')}
+//             className="group bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60 border border-slate-100 hover:shadow-2xl hover:shadow-teal-500/10 transform hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+//           >
+//             <div className="flex items-center space-x-4 mb-4">
+//               <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/25 group-hover:shadow-xl group-hover:shadow-teal-500/30 transition-all duration-300">
+//                 <Bug className="w-8 h-8 text-white" />
+//               </div>
+//               <div className="flex-1">
+//                 <h3 className="text-xl font-bold text-slate-800 mb-1">Pest Detection</h3>
+//                 <p className="text-slate-600">Image-based disease identification & treatment</p>
+//               </div>
+//               <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center group-hover:bg-teal-200 transition-all">
+//                 <Target className="w-4 h-4 text-teal-600" />
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+
+//   const ModernHeader = ({ title, subtitle, onBack, icon: Icon }) => (
+//     <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 pt-12 pb-8">
+//       <div className="px-6">
+//         <div className="flex items-center space-x-4 mb-6">
+//           {onBack && (
+//             <button
+//               onClick={onBack}
+//               className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all"
+//             >
+//               <ArrowLeft className="w-5 h-5" />
+//             </button>
+//           )}
+//           <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+//             {Icon && <Icon className="w-6 h-6 text-white" />}
+//           </div>
+//           <div>
+//             <h1 className="text-2xl font-bold text-white">{title}</h1>
+//             <p className="text-emerald-100">{subtitle}</p>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+
+//   const CropInputScreen = () => (
+//     // ... code for CropInputScreen is unchanged ...
+//     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50/30">
+//       <ModernHeader
+//         title="Crop Recommendation"
+//         subtitle="Find the best crops for your farm"
+//         onBack={() => showScreen('dashboard')}
+//         icon={Leaf}
+//       />
+
+//       <div className="px-6 -mt-4 pb-8">
+//         <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
+//           <form onSubmit={handleCropSubmit} className="space-y-6">
+//             <div className="space-y-4">
+//               <div>
+//                 <label className="flex items-center space-x-2 text-slate-700 font-semibold mb-3">
+//                   <MapPin className="w-4 h-4 text-emerald-600" />
+//                   <span>Location</span>
+//                 </label>
+//                 <select
+//                   required
+//                   className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:border-emerald-400 focus:bg-white transition-all duration-300"
+//                 >
+//                   <option value="">Select District</option>
+//                   <option value="Hisar, Haryana">Hisar, Haryana</option>
+//                 </select>
+//               </div>
+
+//               <div>
+//                 <label className="flex items-center space-x-2 text-slate-700 font-semibold mb-3">
+//                   <Target className="w-4 h-4 text-emerald-600" />
+//                   <span>Farm Size</span>
+//                 </label>
+//                 <input
+//                   type="number"
+//                   placeholder="Enter size in acres"
+//                   step="0.1"
+//                   required
+//                   className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:bg-white transition-all duration-300"
+//                 />
+//               </div>
+//             </div>
+
+//             <button
+//               type="submit"
+//               className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-lg rounded-2xl shadow-xl shadow-emerald-500/25 hover:shadow-2xl hover:shadow-emerald-500/30 transform hover:scale-[1.02] transition-all duration-300"
+//             >
+//               Get AI Recommendations
+//             </button>
+//           </form>
+//         </div>
+//       </div>
+//     </div>
+//   );
+
+//   const WaterInputScreen = () => (
+//     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-cyan-50/30">
+//       <ModernHeader
+//         title="Water Management"
+//         subtitle="Optimize your irrigation schedule"
+//         onBack={() => showScreen('dashboard')}
+//         icon={Droplets}
+//       />
+
+//       <div className="px-6 -mt-4 pb-8">
+//         <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
+//           <form onSubmit={handleWaterSubmit} className="space-y-6">
+//             <div className="space-y-4">
+//               <div>
+//                 <label className="flex items-center space-x-2 text-slate-700 font-semibold mb-3">
+//                   <Leaf className="w-4 h-4 text-cyan-600" />
+//                   <span>Crop Type</span>
+//                 </label>
+//                 <select
+//                   name="crop"
+//                   required
+//                   className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:border-cyan-400 focus:bg-white transition-all duration-300"
+//                 >
+//                   <option value="">Select Crop</option>
+//                   <option value="Wheat">Wheat</option>
+//                   <option value="Rice">Rice</option>
+//                   <option value="Corn">Corn</option>
+//                   <option value="Cotton">Cotton</option>
+//                   <option value="Sugarcane">Sugarcane</option>
+//                 </select>
+//               </div>
+
+//               <div>
+//                 <label className="flex items-center space-x-2 text-slate-700 font-semibold mb-3">
+//                   <Calendar className="w-4 h-4 text-cyan-600" />
+//                   <span>Growth Stage</span>
+//                 </label>
+//                 <select
+//                   name="stage"
+//                   required
+//                   className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:border-cyan-400 focus:bg-white transition-all duration-300"
+//                 >
+//                   <option value="">Select Stage</option>
+//                   <option value="Sowing">Sowing</option>
+//                   <option value="Vegetative">Vegetative</option>
+//                   <option value="Flowering">Flowering</option>
+//                   <option value="Maturity">Maturity</option>
+//                 </select>
+//               </div>
+
+//               <div>
+//                 <label className="flex items-center space-x-2 text-slate-700 font-semibold mb-3">
+//                   <Target className="w-4 h-4 text-cyan-600" />
+//                   <span>Farm Size</span>
+//                 </label>
+//                 <input
+//                   type="number"
+//                   name="farm_size"
+//                   placeholder="Enter size in acres"
+//                   step="0.1"
+//                   required
+//                   className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:bg-white transition-all duration-300"
+//                 />
+//               </div>
+//             </div>
+
+//             <button
+//               type="submit"
+//               className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold text-lg rounded-2xl shadow-xl shadow-cyan-500/25 hover:shadow-2xl hover:shadow-cyan-500/30 transform hover:scale-[1.02] transition-all duration-300"
+//             >
+//               Generate Water Schedule
+//             </button>
+//           </form>
+//         </div>
+//       </div>
+//     </div>
+//   );
+
+//   const PestInputScreen = () => (
+//     // ... code for PestInputScreen is unchanged ...
+//      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30">
+//       <ModernHeader
+//         title="Pest Detection"
+//         subtitle="Upload plant image for AI analysis"
+//         onBack={() => showScreen('dashboard')}
+//         icon={Bug}
+//       />
+
+//       <div className="px-6 -mt-4 pb-8">
+//         <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
+//           <form onSubmit={handlePestSubmit} className="space-y-6">
+//             <div>
+//               <label className="flex items-center space-x-2 text-slate-700 font-semibold mb-3">
+//                 <Camera className="w-4 h-4 text-teal-600" />
+//                 <span>Plant Image</span>
+//               </label>
+
+//               <div
+//                 onClick={() => fileInputRef.current?.click()}
+//                 className="relative border-2 border-dashed border-teal-300 rounded-3xl p-8 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/50 transition-all duration-300 group"
+//               >
+//                 {!uploadedImage ? (
+//                   <div className="space-y-4">
+//                     <div className="w-20 h-20 mx-auto bg-gradient-to-br from-teal-500 to-emerald-500 rounded-3xl flex items-center justify-center shadow-lg shadow-teal-500/25 group-hover:shadow-xl group-hover:shadow-teal-500/30 transition-all duration-300">
+//                       <Camera className="w-10 h-10 text-white" />
+//                     </div>
+//                     <div>
+//                       <p className="font-semibold text-slate-700 text-lg">Capture or Upload Image</p>
+//                       <p className="text-slate-500 mt-1">JPG, PNG, WEBP supported</p>
+//                     </div>
+//                   </div>
+//                 ) : (
+//                   <div className="space-y-4">
+//                     <img
+//                       src={uploadedImage}
+//                       alt="Uploaded plant"
+//                       className="w-full max-w-sm mx-auto rounded-2xl shadow-lg"
+//                     />
+//                     <button
+//                       type="button"
+//                       onClick={(e) => {
+//                         e.stopPropagation();
+//                         setUploadedImage(null);
+//                         fileInputRef.current.value = '';
+//                       }}
+//                       className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all font-medium"
+//                     >
+//                       Remove Image
+//                     </button>
+//                   </div>
+//                 )}
+
+//                 <input
+//                   ref={fileInputRef}
+//                   type="file"
+//                   accept="image/*"
+//                   capture="environment"
+//                   onChange={handleImageUpload}
+//                   className="hidden"
+//                 />
+//               </div>
+//             </div>
+
+//             <button
+//               type="submit"
+//               disabled={!uploadedImage}
+//               className={`w-full py-4 font-bold text-lg rounded-2xl shadow-xl transition-all duration-300 ${
+//                 uploadedImage
+//                   ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-teal-500/25 hover:shadow-2xl hover:shadow-teal-500/30 transform hover:scale-[1.02]'
+//                   : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+//               }`}
+//             >
+//               {uploadedImage ? 'Analyze with AI' : 'Upload Image First'}
+//             </button>
+//           </form>
+//         </div>
+//       </div>
+//     </div>
+//   );
+
+//   const LoadingScreen = () => (
+//     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center">
+//       <div className="text-center">
+//         <div className="relative w-24 h-24 mx-auto mb-8">
+//           <div className="absolute inset-0 border-4 border-emerald-200 rounded-full animate-pulse"></div>
+//           <div className="absolute inset-0 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+//           <div className="absolute inset-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+//             <Sprout className="w-6 h-6 text-white" />
+//           </div>
+//         </div>
+//         <h3 className="text-2xl font-bold text-slate-800 mb-3">AI Processing...</h3>
+//         <p className="text-slate-600 text-lg">Analyzing your data with advanced algorithms</p>
+//       </div>
+//     </div>
+//   );
+
+//   const CropResultsScreen = () => (
+//     // ... code for CropResultsScreen is unchanged ...
+//     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50/30">
+//         <ModernHeader
+//             title="Crop Analysis Results"
+//             subtitle="AI-powered recommendations for your farm"
+//             onBack={() => showScreen('dashboard')}
+//             icon={Leaf}
+//         />
+//         <div className="px-6 -mt-4 pb-8 space-y-6">
+//             {/* ... Content ... */}
+//             <button
+//                 onClick={() => showScreen('dashboard')}
+//                 className="w-full py-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold text-lg rounded-2xl shadow-xl shadow-slate-500/25 hover:shadow-2xl hover:shadow-slate-500/30 transform hover:scale-[1.02] transition-all duration-300"
+//             >
+//                 Back to Dashboard
+//             </button>
+//         </div>
+//     </div>
+//   );
+
+//   // UPDATED: This component now displays real API data
+//   const WaterResultsScreen = () => {
+//     if (!waterResults) {
+//         return (
+//             <div className="min-h-screen flex items-center justify-center bg-slate-50">
+//                 <div className="text-center">
+//                     <p className="text-slate-600 font-semibold">No irrigation data available.</p>
+//                     <button
+//                         onClick={() => showScreen('water-input')}
+//                         className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600"
+//                     >
+//                         Go Back
+//                     </button>
+//                 </div>
+//             </div>
+//         );
+//     }
+
+//     const data = waterResults;
+
+//     return (
+//       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-cyan-50/30">
+//         <ModernHeader
+//           title="Water Management Plan"
+//           subtitle="AI-optimized irrigation schedule"
+//           onBack={() => showScreen('water-input')}
+//           icon={Droplets}
+//         />
+
+//         <div className="px-6 -mt-4 pb-8 space-y-6">
+//           <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
+//             <div className="flex items-center space-x-3 mb-4">
+//               <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center">
+//                 <Leaf className="w-5 h-5 text-white" />
+//               </div>
+//               <h3 className="text-xl font-bold text-slate-800">Crop Analysis</h3>
+//             </div>
+//             <div className="grid grid-cols-3 gap-4">
+//               <div className="bg-cyan-50 rounded-2xl p-4 text-center">
+//                 <p className="text-sm text-cyan-600 font-medium">Crop</p>
+//                 <p className="text-lg font-bold text-slate-800">{data.crop}</p>
+//               </div>
+//               <div className="bg-blue-50 rounded-2xl p-4 text-center">
+//                 <p className="text-sm text-blue-600 font-medium">Stage</p>
+//                 <p className="text-lg font-bold text-slate-800">{data.stage}</p>
+//               </div>
+//               <div className="bg-teal-50 rounded-2xl p-4 text-center">
+//                 <p className="text-sm text-teal-600 font-medium">Farm Size</p>
+//                 <p className="text-lg font-bold text-slate-800">{data.farm_size_acres} acres</p>
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-3xl p-6 text-white shadow-xl shadow-cyan-500/20">
+//             <div className="flex items-center space-x-3 mb-4">
+//               <Droplets className="w-6 h-6" />
+//               <h3 className="text-xl font-bold">Water Requirements</h3>
+//             </div>
+//             <div className="space-y-4">
+//               <div className="flex justify-between items-center">
+//                 <span className="text-cyan-100">Daily Requirement</span>
+//                 <span className="text-2xl font-bold">{data.daily_requirement_mm}mm/day</span>
+//               </div>
+//               <div className="flex justify-between items-center">
+//                 <span className="text-cyan-100">Weekly Total</span>
+//                 <span className="text-2xl font-bold">{data.summary.total_water_liters.toLocaleString()} L</span>
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60">
+//             <div className="flex items-center space-x-3 mb-4">
+//               <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
+//                 <Calendar className="w-5 h-5 text-white" />
+//               </div>
+//               <h3 className="text-xl font-bold text-slate-800">7-Day Smart Schedule</h3>
+//             </div>
+
+//             <div className="space-y-3">
+//               {data.schedule.map((day, index) => (
+//                 <div key={index} className={`rounded-2xl p-4 flex items-center justify-between ${
+//                   !day.should_irrigate ? 'bg-green-50 border-l-4 border-green-500' :
+//                   'bg-blue-50 border-l-4 border-blue-500'
+//                 }`}>
+//                   <div className="flex items-center space-x-4">
+//                     <div className="text-center w-12">
+//                       <p className="font-semibold text-slate-800">{day.day_of_week.slice(0, 3)}</p>
+//                       <p className="text-sm text-slate-600">{day.date_str.slice(5)}</p>
+//                     </div>
+//                     <div>
+//                       <p className={`font-bold text-lg ${
+//                         !day.should_irrigate ? 'text-green-600' : 'text-blue-600'
+//                       }`}>
+//                         {day.action}
+//                       </p>
+//                       <p className="text-sm text-slate-600">Forecast: {day.temperature_c}°C • {day.rainfall_mm}mm rain</p>
+//                     </div>
+//                   </div>
+//                 </div>
+//               ))}
+//             </div>
+
+//             <div className="mt-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-4 border-l-4 border-emerald-500">
+//               <div className="flex items-start space-x-3">
+//                 <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5" />
+//                 <div>
+//                   <p className="font-semibold text-emerald-800">AI Optimization Summary</p>
+//                   <p className="text-sm text-emerald-700 mt-1">
+//                     Irrigation needed on {data.summary.irrigation_days} of the next 7 days.
+//                     You will save water on {data.summary.water_saving_days} days due to rainfall.
+//                   </p>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+
+//           <button
+//             onClick={() => showScreen('dashboard')}
+//             className="w-full py-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold text-lg rounded-2xl shadow-xl shadow-slate-500/25 hover:shadow-2xl hover:shadow-slate-500/30 transform hover:scale-[1.02] transition-all duration-300"
+//           >
+//             Back to Dashboard
+//           </button>
+//         </div>
+//       </div>
+//     );
+//   };
+
+//   const PestResultsScreen = () => (
+//     // ... code for PestResultsScreen is unchanged ...
+//     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30">
+//         <ModernHeader
+//             title="Disease Analysis"
+//             subtitle="AI-powered plant health assessment"
+//             onBack={() => showScreen('dashboard')}
+//             icon={Bug}
+//         />
+//         <div className="px-6 -mt-4 pb-8 space-y-6">
+//            {/* ... Content ... */}
+//             <button
+//                 onClick={() => showScreen('dashboard')}
+//                 className="w-full py-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold text-lg rounded-2xl shadow-xl shadow-slate-500/25 hover:shadow-2xl hover:shadow-slate-500/30 transform hover:scale-[1.02] transition-all duration-300"
+//             >
+//                 Back to Dashboard
+//             </button>
+//         </div>
+//     </div>
+//   );
+
+//   if (isLoading) return <LoadingScreen />;
+
+//   switch (currentScreen) {
+//     case 'dashboard': return <DashboardScreen />;
+//     case 'crop-input': return <CropInputScreen />;
+//     case 'water-input': return <WaterInputScreen />;
+//     case 'pest-input': return <PestInputScreen />;
+//     case 'crop-results': return <CropResultsScreen />;
+//     case 'water-results': return <WaterResultsScreen />;
+//     case 'pest-results': return <PestResultsScreen />;
+//     default: return <DashboardScreen />;
+//   }
+// };
+
+// export default AgriSmartApp;
